@@ -41,8 +41,7 @@ sudo apt install qemu-user-static samba libguestfs-tools udisks2 zsh
 `display_________=0` Raspberry Pi display (0)  
 `path_filesystem_="/tmp"` SD Card, USB drive etc.  
 `path_software___="/tmp"` SD Card, USB drive etc.  
-`path_backup_file="/home/pi/Documents/non_qcow2.tar.gz"`  
-Backup tar.gz archive for `chroot_x86_64 --backup`
+`path_backup_file="/home/pi/Documents/non_qcow2.tar.gz"` Backup tar.gz archive for `chroot_x86_64 --backup`  
 `qemu_image_url__="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-10.10.0-amd64-netinst.iso"` ISO image URL  
 `qemu_image_size_="16G"` QEMU VM, image size, at least 16GB (maximum size)  
 `qemu_smp________=2` QEMU VM, number of cores, 50% of host (recommended)  
@@ -70,16 +69,16 @@ Requires `libncurses5` and `libgtk2.0-0` installed in QEMU VM and rsynced to chr
 If intended to be run over SSH, don’t forget to set DISPLAY `export DISPLAY=:0`.
 
 Slower but with Java and Python (Azul Zulu JDK build shipped with Stata doesn’t seem to be working under qemu-user-static, probably because of dynamic library loading):  
-`qemu-x86_64 /usr/local/stata17/stata` (IB console)  
-`qemu-x86_64 /usr/local/stata17/xstata` (IB GUI)  
-`qemu-x86_64 /usr/local/stata17/stata-se` (SE console)  
-`qemu-x86_64 /usr/local/stata17/xstata-se` (SE GUI)  
+`qemu-x86_64 /usr/local/stata17/stata` (Stata IC console)  
+`qemu-x86_64 /usr/local/stata17/xstata` (Stata IC GUI)  
+`qemu-x86_64 /usr/local/stata17/stata-se` (Stata SE console)  
+`qemu-x86_64 /usr/local/stata17/xstata-se` (Stata SE GUI)  
 
 Faster but without Java and Python:  
-`/usr/local/stata17/stata` (IB console)  
-`/usr/local/stata17/xstata` (IB GUI)  
-`/usr/local/stata17/stata-se` (SE console)  
-`/usr/local/stata17/xstata-se` (SE GUI)
+`/usr/local/stata17/stata` (Stata IC console)  
+`/usr/local/stata17/xstata` (Stata IC GUI)  
+`/usr/local/stata17/stata-se` (Stata SE console)  
+`/usr/local/stata17/xstata-se` (Stata SE GUI)
 
 **NB** Most Stata commands are C-based (especially compiled Mata .mo and .mlib files), only a small fraction are Java-based (for example, `sdmxuse`) or Python-based (for example, `pyconvertu`).  
 **NB** The `ado` directory and hidden `.stata17` folder will be created in host `~/`.
