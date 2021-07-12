@@ -4,7 +4,7 @@ This script a) creates a [QEMU VM qcow2 file](https://qemu.readthedocs.io/en/lat
 
 Tailored for [Raspberry Pi 4B (64-bit microcomputer) or later](https://www.raspberrypi.org/products/raspberry-pi-4-model-b/) and SW like [Stata®](https://www.stata.com/) (in-built support), [Conda (Anaconda, Miniconda) 3+](https://www.anaconda.com/), Adobe Acrobat DC (Legacy) etc.
 
-**NB** [CrossOver 20+] (https://www.codeweavers.com/crossover) doesn’t yet seem to be working under chroot, please use Wine instead!
+**NB** [CrossOver 20+](https://www.codeweavers.com/crossover/) doesn’t yet seem to be working under chroot, please use Wine instead!
 
 ### Requirements:
 - Debian/Ubuntu-based system (preferably Raspberry Pi OS)
