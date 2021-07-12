@@ -1,10 +1,10 @@
 # QEMU-based x86_64 chroot for Raspberry Pi 4B or later with (in-built) Stata® and other x86_64 software support
 
-This script a) creates a [https://qemu.readthedocs.io/en/latest/](QEMU VM qcow2 file) from an automatically downloaded ISO image, b) rsyncs (copies) its filesystem into a chroot, c) upgrades it when necessary, d) configures the chroot to launch x86_64 software on machines with arm64 (aarch64) CPU architecture.
+This script a) creates a [QEMU VM qcow2 file](https://qemu.readthedocs.io/en/latest/) from an automatically downloaded ISO image, b) rsyncs (copies) its filesystem into a chroot, c) upgrades it when necessary, d) configures the chroot to launch x86_64 software on machines with arm64 (aarch64) CPU architecture.
 
-Tailored for [https://www.raspberrypi.org/products/raspberry-pi-4-model-b/](Raspberry Pi 4B or later) (64-bit microcomputer) and SW like [https://www.stata.com](Stata®) (in-built support), [https://www.anaconda.com](Conda) (Anaconda, Miniconda) 3+, Adobe Acrobat DC (Legacy) etc.
+Tailored for [Raspberry Pi 4B (64-bit microcomputer) or later](https://www.raspberrypi.org/products/raspberry-pi-4-model-b/) and SW like [Stata®](https://www.stata.com/) (in-built support), [Conda (Anaconda, Miniconda) 3+](https://www.anaconda.com/), Adobe Acrobat DC (Legacy) etc.
 
-**NB** [https://www.codeweavers.com/crossover](CrossOver) doesn’t yet seem to be working under chroot, please use Wine instead!
+**NB** [CrossOver 20+] (https://www.codeweavers.com/crossover) doesn’t yet seem to be working under chroot, please use Wine instead!
 
 ### Requirements:
 - Debian/Ubuntu-based system (preferably Raspberry Pi OS)
