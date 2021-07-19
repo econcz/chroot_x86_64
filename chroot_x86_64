@@ -177,24 +177,50 @@ chroot_setup()   {
             chmod    0600 “${path_chroot_____}${path_user_chroot}”/.ssh/id_rsa*
         }
         # Stata SE
-        mkdir -p /lib /lib64
-        rm    -f /lib64/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu             \
+        rm    -f /usr/lib64 /usr/lib32 /lib/x86_64-linux-gnu                   \
+                 /usr/lib/i386-linux-gnu /usr/lib/ld-linux.so.2                \
+                 “$(eval echo ~”${user____________}”)”/ado                     \
                   $(find “${path_local_sw___}”/ -type l)      &> /dev/null
-        ln    -s “${path_chroot_____}”/lib64/ld-linux-x86-64.so.2 /lib64/
-        ln    -s “${path_chroot_____}”/lib/x86_64-linux-gnu       /lib/
+        ln    -s “${path_chroot_____}”/usr/lib64                /usr/
+        ln    -s “${path_chroot_____}”/usr/lib32                /usr/
+        ln    -s “${path_chroot_____}”/usr/lib/x86_64-linux-gnu /usr/lib/
+        ln    -s “${path_chroot_____}”/usr/lib/i386-linux-gnu   /usr/lib/
+        ln    -s “${path_chroot_____}”/lib/i386-linux-gnu/ld-2.28.so           \
+                 /lib/ld-linux.so.2
+        ln    -s /usr/lib64 /                                 &> /dev/null
+        ln    -s /usr/lib32 /                                 &> /dev/null
+        ln    -s “${path_chroot_____}${path_user_chroot}”/ado                  \
+                 “$(eval echo ~”${user____________}”)”/       &> /dev/null
         for i in “${path_chroot_____}${path_local_sw___}”/*               ; do
         ln    -s “$i” “${path_local_sw___}”/                              ; done
+        [[ “${user_chroot_____}” != “${user____________}”                  ]] &&
+        {
+            useradd “${user_chroot_____}”                     &> /dev/null
+            usermod -m -d “${path_user_chroot}”                                \
+                    “${user_chroot_____}”                     &> /dev/null
+            mkdir   -p    “${path_user_chroot}”
+            for i in “${path_chroot_____}${path_user_chroot}”/*/          ; do
+            ln -s “$i” “${path_user_chroot}”/                 &> /dev/null; done
+            stata=“$(basename “$(ls -d “${path_local_sw___}”/stata*)”)”
+            ln -s “${path_chroot_____}${path_user_chroot}”/.”${stata}”         \
+                  “${path_user_chroot}”                       &> /dev/null
+        }
         for i in “stata” “stata-se” “xstata” “xstata-se”                  ; do
+        rm -f    “${path_chroot_____}”/usr/local/bin/“$i”     &> /dev/null    &&
         echo     “#!/bin/bash”                                                 |
         tee      “${path_chroot_____}”/usr/local/bin/“$i”     &> /dev/null    &&
         echo     “${path_local_sw___}/stata*/$i”                               |
         tee   -a “${path_chroot_____}”/usr/local/bin/“$i”     &> /dev/null    &&
-        chmod    0755 “${path_chroot_____}”/usr/local/bin/“$i”            ; done
+        chmod    0755 “${path_chroot_____}”/usr/local/bin/“$i”    
     # configure permissions
+    chown -R “${user_chroot_____}”:”${user_chroot_____}” “${path_user_chroot}”
     chroot   “${path_chroot_____}”                                             \
     chown -R “${user_chroot_____}”:”${user_chroot_____}” “${path_user_chroot}”
     for i in “${path_local_sw___}” $(echo ${rsync_ignore____})            ; do
-    setfacl -R -m u:”${user____________}”:rwx “${path_chroot_____}”/“$i”  ; done
+    setfacl -R -m u:”${user_chroot_____}”:rwx “${path_chroot_____}”/“$i”       \
+                                                              &> /dev/null
+    chroot   “${path_chroot_____}”                                             \
+    setfacl -R -m u:”${user_chroot_____}”:rwx “$i”            &> /dev/null; done
     [[ $2 -eq 1                                                            ]] &&
     echo   “Chroot setup is complete! Type $(readlink -f “$0”) <cmd> to use.”
     exit 0

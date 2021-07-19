@@ -73,6 +73,11 @@ Slower but with Java and Python (Azul Zulu JDK build shipped with Stata doesn’
 `qemu-x86_64 /usr/local/stata17/xstata` (Stata IC GUI)  
 `qemu-x86_64 /usr/local/stata17/stata-se` (Stata SE console)  
 `qemu-x86_64 /usr/local/stata17/xstata-se` (Stata SE GUI)  
+```
+# For Jupyter kernel (to launch from chroot):
+echo "#!/bin/bash" | sudo tee /var/chroot_x86_64/usr/local/bin/stata-se
+echo "chmod 0600 ~/.ssh/id_rsa; ssh -oAddressFamily=inet -oStrictHostKeyChecking=no -t -i ~/.ssh/id_rsa pi@localhost 'cd; qemu-x86_64 /usr/local/stata17/stata-se'" | sudo tee -a /var/chroot_x86_64/usr/local/bin/stata-se
+```
 
 Faster but without Java and Python:  
 `/usr/local/stata17/stata` (Stata IC console)  
