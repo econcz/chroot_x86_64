@@ -1,24 +1,24 @@
 #!/bin/zsh
 
 # ============================================================================ #
-# ==== Version 1.1.0  30jun2021  ============================================= #
+# ==== Version 1.1.1  31mar2022  ============================================= #
 # ==== (c) IB                    ============================================= #
 # ============================================================================ #
 
 # check if the user is /root/, or exit with error ============================ #
 ####
 [[ $EUID -ne 0                                                             ]] &&
-{ echo “This script must be run as root!”                            ; exit 1; }
+{ echo "This script must be run as root!"                            ; exit 1; }
 
 # display /help/ ============================================================= #
 ####
-[[ $1 == *”-h”*                                                            ]] &&
-{ echo “type $(readlink -f “$0”) —install to install the chroot environment”;
-  echo “type $(readlink -f “$0”) —setup   to setup the chroot environment”  ;
-  echo “type $(readlink -f “$0”) —upgrade to upgrade the chroot environment”;
-  echo “type $(readlink -f “$0”) —backup  to backup unsynced folders/files” ;
-  echo “type $(readlink -f “$0”) —restore to restore the chroot environment”;
-  echo “type $(readlink -f “$0”) <cmd>     to run <cmd> under chroot”; exit 0; }
+[[ $1 == *"-h"*                                                            ]] &&
+{ echo "type $(readlink -f "$0") —install to install the chroot environment";
+  echo "type $(readlink -f "$0") —setup   to setup the chroot environment"  ;
+  echo "type $(readlink -f "$0") —upgrade to upgrade the chroot environment";
+  echo "type $(readlink -f "$0") —backup  to backup unsynced folders/files" ;
+  echo "type $(readlink -f "$0") —restore to restore the chroot environment";
+  echo "type $(readlink -f "$0") <cmd>     to run <cmd> under chroot"; exit 0; }
 
 # ============================================================================ #
 # ==== Configuration ========================================================= #
@@ -26,111 +26,111 @@
 
 # /general configuration/ (general variables) ——————————— #
 ####
-user____________=“pi”                                  `# “pi” in Raspberry Pi `
-user_chroot_____=“pi”                                  `# same as in the VM    `
+user____________="pi"                                  `# "pi" in Raspberry Pi `
+user_chroot_____="pi"                                  `# same as in the VM    `
 display_________=0                                     `# 0 by default         `
-path_filesystem_=“/tmp”
-path_software___=“/tmp”
-path_backup_file=“/home/pi/Documents/non_qcow2.tar.gz”
-qemu_image_url__=“https://cdimage.debian.org/debian-cd/current/amd64”
-qemu_image_url__=“${qemu_image_url__}/iso-cd/debian-10.10.0-amd64-netinst.iso”
-qemu_image_size_=“16G”                                 `# 16G or more          `
+path_filesystem_="/tmp"
+path_software___="/tmp"
+path_backup_file="/home/pi/Documents/non_qcow2.tar.gz"
+qemu_image_url__="https://cdimage.debian.org/debian-cd/current/amd64"
+qemu_image_url__="${qemu_image_url__}/iso-cd/debian-10.10.0-amd64-netinst.iso"
+qemu_image_size_="16G"                                 `# 16G or more          `
 qemu_smp________=2                                     `# 50% of host CPU      `
-qemu_m__________=“4G”                                  `# 50% of host RAM      `
+qemu_m__________="4G"                                  `# 50% of host RAM      `
 qemu_ssh_port___=22000
-path_local_sw___=“/usr/local”
-path_mountpoint_=“/mnt”
-path_chroot_____=“/var/chroot_x86_64”
-path_user_chroot=“/home/pi”                            `# ~ in the VM          `
+path_local_sw___="/usr/local"
+path_mountpoint_="/mnt"
+path_chroot_____="/var/chroot_x86_64"
+path_user_chroot="/home/pi"                            `# ~ in the VM          `
 vm_on_upgrade___=1                                     `# 0 or 1               `
-rsync_ignore____=“/home/pi/“                           `# no patterns allowed! `
-rsync_ignore____=“${rsync_ignore____} ${path_local_sw___}/stata17/“
+rsync_ignore____="/home/pi/"                           `# no patterns allowed! `
+rsync_ignore____="${rsync_ignore____} ${path_local_sw___}/stata17/"
 # NB if upgrade is interrupted, unsynced files can be found in ~/.rsync_ignore/!
 
 # /user-defined functions/ ————————————————— #
 ####
 chroot_backup() {
-    [[ ! -e “$(dirname “${path_backup_file}”)”                             ]] &&
+    [[ ! -e "$(dirname "${path_backup_file}")"                             ]] &&
     {
-        echo “The backups folder was not found! Aborting chroot backup...”
+        echo "The backups folder was not found! Aborting chroot backup..."
         exit 0
     }
     # unmount user folder(s)
-    for i in “$(eval echo ~”${user____________}”)”/*/                     ; do
-    i=“$(basename “$i”)”
-    umount -lf “${path_chroot_____}${path_user_chroot}”/“$i”  &> /dev/null; done
+    for i in "$(eval echo ~"${user____________}")"/*/                     ; do
+    i="$(basename "$i")"
+    umount -lf "${path_chroot_____}${path_user_chroot}"/"$i"  &> /dev/null; done
     sleep 2
-    [[ “$(mount | grep ${path_user_chroot})” != “”                         ]] &&
+    [[ "$(mount | grep ${path_user_chroot})" != ""                         ]] &&
     {
-        echo “Unmounting failed, please unmount the filesystem(s) manually!”
+        echo "Unmounting failed, please unmount the filesystem(s) manually!"
         exit 0
     }
     # backup the ${rsync_ignore____} folders/files
-    echo “Chroot backup initiated. Compressing unsynced folders/files...”
-    chroot “${path_chroot_____}”                                               \
-    sh -c “tar czvf \”${path_backup_file}\” ${rsync_ignore____}”
+    echo "Chroot backup initiated. Compressing unsynced folders/files..."
+    chroot "${path_chroot_____}"                                               \
+    sh -c "tar czvf \"${path_backup_file}\" ${rsync_ignore____}"
     # finish
-    echo “Backup of unsynced folders/files is complete! Setting up chroot...”
+    echo "Backup of unsynced folders/files is complete! Setting up chroot..."
     chroot_setup   0 1
 }
 chroot_install() {
     # display information and ask for confirmation
-    echo “Script requirements:”                        `# sudo apt install ... `
-    echo -e “    udisks2\n    libguestfs-tools\n    qemu (with x86_64 support)”
-    echo -e “    qemu-user-static\n    samba\n”
-    echo “This script will”
-    echo -n “    1. create a QEMU VM qcow2 file of ${qemu_image_size_} “
-    echo -n “(dynamically increasing size) at “
-    echo    “’${path_filesystem_}$(basename “${path_chroot_____}”).qcow2’;”
-    echo -n “    2. help you install the image “
-    echo -n “’$(basename “${qemu_image_url__}”)’ “
-    echo    “into the qcow2 file;”
-    echo -n “    3. run the QEMU VM for software installation with a CPU of “
-    echo    “${qemu_smp________} core(s) and a RAM of ${qemu_m__________};”
-    echo -n “    4. on VM’s shutdown, mount the qcow2 file at “
-    echo    “’${path_mountpoint_}’;”
-    echo    “    5. rsync the QEMU VM’s filesystem to ‘${path_chroot_____}’.”
-    echo    “”
-    read “ans?$(echo $’\n’)Do you wish to continue? [y/n]$(echo $’\n: ‘)”
+    echo "Script requirements:"                        `# sudo apt install ... `
+    echo -e "    udisks2\n    libguestfs-tools\n    qemu (with x86_64 support)"
+    echo -e "    qemu-user-static\n    samba\n"
+    echo "This script will"
+    echo -n "    1. create a QEMU VM qcow2 file of ${qemu_image_size_} "
+    echo -n "(dynamically increasing size) at "
+    echo    "’${path_filesystem_}$(basename "${path_chroot_____}").qcow2’;"
+    echo -n "    2. help you install the image "
+    echo -n "’$(basename "${qemu_image_url__}")’ "
+    echo    "into the qcow2 file;"
+    echo -n "    3. run the QEMU VM for software installation with a CPU of "
+    echo    "${qemu_smp________} core(s) and a RAM of ${qemu_m__________};"
+    echo -n "    4. on VM’s shutdown, mount the qcow2 file at "
+    echo    "’${path_mountpoint_}’;"
+    echo    "    5. rsync the QEMU VM’s filesystem to ‘${path_chroot_____}’."
+    echo    ""
+    read "ans?$(echo $’\n’)Do you wish to continue? [y/n]$(echo $’\n: ‘)"
     [[ $(echo ${ans} | tr -d ‘[:space:]’) != [Yy]*                         ]] &&
     exit 0
     # set up the qcow2 file
-    [[ -e “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”     ]] &&
+    [[ -e "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"     ]] &&
     {
-        echo “The QEMU VM qcow2 file already exists! Aborting chroot install...”
+        echo "The QEMU VM qcow2 file already exists! Aborting chroot install..."
         exit 0
     }
     qemu-img create                                                            \
          -f qcow2                                                              \
-               “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”    \
+               "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"    \
                 ${qemu_image_size_}                                           &&
     rm   -rf    /tmp/image.iso                                                &&
-    wget -O     /tmp/image.iso “${qemu_image_url__}”                          &&
+    wget -O     /tmp/image.iso "${qemu_image_url__}"                          &&
     qemu-system-x86_64                                                         \
         -smp    ${qemu_smp________}                                            \
         -m      ${qemu_m__________}                                            \
         -cdrom  /tmp/image.iso                                                 \
-        -hda   “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”    \
-        -nic    user,smb=“${path_software___}”                                 \
+        -hda   "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"    \
+        -nic    user,smb="${path_software___}"                                 \
         -nic    user,hostfwd=tcp::${qemu_ssh_port___}-:22
     # perform chroot upgrade
-    echo “The QEMU VM qcow2 file is configured! Commencing filesystem sync...”
+    echo "The QEMU VM qcow2 file is configured! Commencing filesystem sync..."
     chroot_upgrade 0 1
 }
 chroot_restore() {
-    [[ ! -e “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”   ]] &&
+    [[ ! -e "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"   ]] &&
     {
-        echo “The QEMU VM qcow2 file was not found! Aborting chroot restore...”
+        echo "The QEMU VM qcow2 file was not found! Aborting chroot restore..."
         exit 0
     }
     # perform chroot upgrade
-    echo “Chroot restore initiated. Commencing filesystem sync...”
+    echo "Chroot restore initiated. Commencing filesystem sync..."
     chroot_upgrade 0 0
     # restore the ${rsync_ignore____} folders/files
-    echo “Uncompressing backed up unsynced folders/files...”
-    sh -c “tar xzvf \”${path_backup_file}\” -C \”${path_chroot_____}\””
+    echo "Uncompressing backed up unsynced folders/files..."
+    sh -c "tar xzvf \"${path_backup_file}\" -C \"${path_chroot_____}\""
     # finish
-    echo “Chroot restore is complete! Rebooting (120 seconds)...”             &&
+    echo "Chroot restore is complete! Rebooting (120 seconds)..."             &&
     sleep 120                                                                 &&
     shutdown -r now
 }
@@ -138,91 +138,91 @@ chroot_setup()   {
     # $1 == 0    do not mount the chroot filesystem(s) on start
     # $2 == 0    do not print message on finish
     [[ $1 -eq 1                                                            ]] &&
-    [[ “$(mount | grep ${path_chroot_____} | grep -v /media)” != “”        ]] &&
+    [[ "$(mount | grep ${path_chroot_____} | grep -v /media)" != ""        ]] &&
     {
-        echo “The chroot is already (partly) mounted! Aborting chroot setup...”
+        echo "The chroot is already (partly) mounted! Aborting chroot setup..."
         exit 0
     }
     # mount the chroot filesystem(s)
     [[ $1 -eq 1                                                            ]] &&
-    mount  -t      proc proc “${path_chroot_____}”/proc                       &&
-    mount  -t      sysfs sys “${path_chroot_____}”/sys                        &&
-    mount  —rbind /dev      “${path_chroot_____}”/dev                        &&
-    mount  —rbind /dev/pts  “${path_chroot_____}”/dev/pts                    &&
-    chmod          0777      “${path_chroot_____}”/tmp
+    mount  -t      proc proc "${path_chroot_____}"/proc                       &&
+    mount  -t      sysfs sys "${path_chroot_____}"/sys                        &&
+    mount  —rbind /dev      "${path_chroot_____}"/dev                        &&
+    mount  —rbind /dev/pts  "${path_chroot_____}"/dev/pts                    &&
+    chmod          0777      "${path_chroot_____}"/tmp
     # mount user folder(s)
-    for i in “$(eval echo ~”${user____________}”)”/*/                     ; do
-    i=“$(basename “$i”)”
-    mkdir -p      “${path_chroot_____}${path_user_chroot}”/“$i”
-    mount —rbind “$i” “${path_chroot_____}${path_user_chroot}”/“$i”      ; done
+    for i in "$(eval echo ~"${user____________}")"/*/                     ; do
+    i="$(basename "$i")"
+    mkdir -p      "${path_chroot_____}${path_user_chroot}"/"$i"
+    mount —rbind "$i" "${path_chroot_____}${path_user_chroot}"/"$i"      ; done
     # mount media (to chroot)
-    [[ “$(mount | grep ${path_chroot_____} | grep /media)” == “”           ]] &&
-    chroot “${path_chroot_____}” mkdir -p /media                              &&
-    mount  —rbind /media    “${path_chroot_____}”/media
+    [[ "$(mount | grep ${path_chroot_____} | grep /media)" == ""           ]] &&
+    chroot "${path_chroot_____}" mkdir -p /media                              &&
+    mount  —rbind /media    "${path_chroot_____}"/media
     # share DNS servers and X11
-    ln -f /etc/resolv.conf “${path_chroot_____}”/etc/
+    ln -f /etc/resolv.conf "${path_chroot_____}"/etc/
     ln -f /tmp/.X11-unix/X${display_________}                                  \
-          “${path_chroot_____}”/tmp/.X11-unix/
-    cp    “$(eval echo ~”${user____________}”)”/.Xauthority                    \
-          “${path_chroot_____}${path_user_chroot}”/
+          "${path_chroot_____}"/tmp/.X11-unix/
+    cp    "$(eval echo ~"${user____________}")"/.Xauthority                    \
+          "${path_chroot_____}${path_user_chroot}"/
     # configure RSA key for chroot -> host SSH and individual apps
-        [[ ! -e  “${path_chroot_____}${path_user_chroot}”/.ssh/id_rsa      ]] &&
+        [[ ! -e  "${path_chroot_____}${path_user_chroot}"/.ssh/id_rsa      ]] &&
         {
-            cd   “$(eval echo ~”${user____________}”)”/.ssh/
-            su   “${user____________}” -c ‘echo  -e “\n\n\n” | ssh-keygen’
-            echo “# chroot_x86_64” | tee -a authorized_keys   &> /dev/null    &&
+            cd   "$(eval echo ~"${user____________}")"/.ssh/
+            su   "${user____________}" -c ‘echo  -e "\n\n\n" | ssh-keygen’
+            echo "# chroot_x86_64" | tee -a authorized_keys   &> /dev/null    &&
             cat  id_rsa.pub        | tee -a authorized_keys   &> /dev/null
-            mkdir -p “${path_chroot_____}${path_user_chroot}”/.ssh
-            mv       id_rsa* “${path_chroot_____}${path_user_chroot}”/.ssh/
-            chmod    0600 “${path_chroot_____}${path_user_chroot}”/.ssh/id_rsa*
+            mkdir -p "${path_chroot_____}${path_user_chroot}"/.ssh
+            mv       id_rsa* "${path_chroot_____}${path_user_chroot}"/.ssh/
+            chmod    0600 "${path_chroot_____}${path_user_chroot}"/.ssh/id_rsa*
         }
         # Stata SE
         rm    -f /usr/lib64 /usr/lib32 /lib/x86_64-linux-gnu                   \
                  /usr/lib/i386-linux-gnu /usr/lib/ld-linux.so.2                \
-                 “$(eval echo ~”${user____________}”)”/ado                     \
-                  $(find “${path_local_sw___}”/ -type l)      &> /dev/null
-        ln    -s “${path_chroot_____}”/usr/lib64                /usr/
-        ln    -s “${path_chroot_____}”/usr/lib32                /usr/
-        ln    -s “${path_chroot_____}”/usr/lib/x86_64-linux-gnu /usr/lib/
-        ln    -s “${path_chroot_____}”/usr/lib/i386-linux-gnu   /usr/lib/
-        ln    -s “${path_chroot_____}”/lib/i386-linux-gnu/ld-2.28.so           \
+                 "$(eval echo ~"${user____________}")"/ado                     \
+                  $(find "${path_local_sw___}"/ -type l)      &> /dev/null
+        ln    -s "${path_chroot_____}"/usr/lib64                /usr/
+        ln    -s "${path_chroot_____}"/usr/lib32                /usr/
+        ln    -s "${path_chroot_____}"/usr/lib/x86_64-linux-gnu /usr/lib/
+        ln    -s "${path_chroot_____}"/usr/lib/i386-linux-gnu   /usr/lib/
+        ln    -s "${path_chroot_____}"/lib/i386-linux-gnu/ld-2.28.so           \
                  /lib/ld-linux.so.2
         ln    -s /usr/lib64 /                                 &> /dev/null
         ln    -s /usr/lib32 /                                 &> /dev/null
-        ln    -s “${path_chroot_____}${path_user_chroot}”/ado                  \
-                 “$(eval echo ~”${user____________}”)”/       &> /dev/null
-        for i in “${path_chroot_____}${path_local_sw___}”/*               ; do
-        ln    -s “$i” “${path_local_sw___}”/                              ; done
-        [[ “${user_chroot_____}” != “${user____________}”                  ]] &&
+        ln    -s "${path_chroot_____}${path_user_chroot}"/ado                  \
+                 "$(eval echo ~"${user____________}")"/       &> /dev/null
+        for i in "${path_chroot_____}${path_local_sw___}"/*               ; do
+        ln    -s "$i" "${path_local_sw___}"/                              ; done
+        [[ "${user_chroot_____}" != "${user____________}"                  ]] &&
         {
-            useradd “${user_chroot_____}”                     &> /dev/null
-            usermod -m -d “${path_user_chroot}”                                \
-                    “${user_chroot_____}”                     &> /dev/null
-            mkdir   -p    “${path_user_chroot}”
-            for i in “${path_chroot_____}${path_user_chroot}”/*/          ; do
-            ln -s “$i” “${path_user_chroot}”/                 &> /dev/null; done
-            stata=“$(basename “$(ls -d “${path_local_sw___}”/stata*)”)”
-            ln -s “${path_chroot_____}${path_user_chroot}”/.”${stata}”         \
-                  “${path_user_chroot}”                       &> /dev/null
+            useradd "${user_chroot_____}"                     &> /dev/null
+            usermod -m -d "${path_user_chroot}"                                \
+                    "${user_chroot_____}"                     &> /dev/null
+            mkdir   -p    "${path_user_chroot}"
+            for i in "${path_chroot_____}${path_user_chroot}"/*/          ; do
+            ln -s "$i" "${path_user_chroot}"/                 &> /dev/null; done
+            stata="$(basename "$(ls -d "${path_local_sw___}"/stata*)")"
+            ln -s "${path_chroot_____}${path_user_chroot}"/."${stata}"         \
+                  "${path_user_chroot}"                       &> /dev/null
         }
-        for i in “stata” “stata-se” “xstata” “xstata-se”                  ; do
-        rm -f    “${path_chroot_____}”/usr/local/bin/“$i”     &> /dev/null    &&
-        echo     “#!/bin/bash”                                                 |
-        tee      “${path_chroot_____}”/usr/local/bin/“$i”     &> /dev/null    &&
-        echo     “${path_local_sw___}/stata*/$i”                               |
-        tee   -a “${path_chroot_____}”/usr/local/bin/“$i”     &> /dev/null    &&
-        chmod    0755 “${path_chroot_____}”/usr/local/bin/“$i”    
+        for i in "stata" "stata-se" "xstata" "xstata-se"                  ; do
+        rm -f    "${path_chroot_____}"/usr/local/bin/"$i"     &> /dev/null    &&
+        echo     "#!/bin/bash"                                                 |
+        tee      "${path_chroot_____}"/usr/local/bin/"$i"     &> /dev/null    &&
+        echo     "${path_local_sw___}/stata*/$i"                               |
+        tee   -a "${path_chroot_____}"/usr/local/bin/"$i"     &> /dev/null    &&
+        chmod    0755 "${path_chroot_____}"/usr/local/bin/"$i"    
     # configure permissions
-    chown -R “${user_chroot_____}”:”${user_chroot_____}” “${path_user_chroot}”
-    chroot   “${path_chroot_____}”                                             \
-    chown -R “${user_chroot_____}”:”${user_chroot_____}” “${path_user_chroot}”
-    for i in “${path_local_sw___}” $(echo ${rsync_ignore____})            ; do
-    setfacl -R -m u:”${user_chroot_____}”:rwx “${path_chroot_____}”/“$i”       \
+    chown -R "${user_chroot_____}":"${user_chroot_____}" "${path_user_chroot}"
+    chroot   "${path_chroot_____}"                                             \
+    chown -R "${user_chroot_____}":"${user_chroot_____}" "${path_user_chroot}"
+    for i in "${path_local_sw___}" $(echo ${rsync_ignore____})            ; do
+    setfacl -R -m u:"${user_chroot_____}":rwx "${path_chroot_____}"/"$i"       \
                                                               &> /dev/null
-    chroot   “${path_chroot_____}”                                             \
-    setfacl -R -m u:”${user_chroot_____}”:rwx “$i”            &> /dev/null; done
+    chroot   "${path_chroot_____}"                                             \
+    setfacl -R -m u:"${user_chroot_____}":rwx "$i"            &> /dev/null; done
     [[ $2 -eq 1                                                            ]] &&
-    echo   “Chroot setup is complete! Type $(readlink -f “$0”) <cmd> to use.”
+    echo   "Chroot setup is complete! Type $(readlink -f "$0") <cmd> to use."
     exit 0
 }
 chroot_upgrade() {
@@ -230,69 +230,69 @@ chroot_upgrade() {
     # $2 == 0    do not run reboot on finish
     # find media mounted to host (not chroot)
     declare -a media
-    while read i; do media=( “${media[@]}” “$i”); done                         \
+    while read i; do media=( "${media[@]}" "$i"); done                         \
     < <(mount | grep -v ${path_chroot_____} | grep /media | awk ‘{print $1}’)
     # unmount the chroot filesystem(s)
-    for i in “/proc” “/sys” “/dev/pts” “/dev”                             ; do
-    umount -lf “${path_chroot_____}$i”                        &> /dev/null; done
+    for i in "/proc" "/sys" "/dev/pts" "/dev"                             ; do
+    umount -lf "${path_chroot_____}$i"                        &> /dev/null; done
     sleep 2
     # unmount user folder(s)
-    for i in “$(eval echo ~”${user____________}”)”/*/                     ; do
-    i=“$(basename “$i”)”
-    umount -lf “${path_chroot_____}${path_user_chroot}”/“$i”  &> /dev/null; done
+    for i in "$(eval echo ~"${user____________}")"/*/                     ; do
+    i="$(basename "$i")"
+    umount -lf "${path_chroot_____}${path_user_chroot}"/"$i"  &> /dev/null; done
     sleep 2
-    [[ “$(mount | grep ${path_chroot_____} | grep -v /media)” != “”        ]] &&
+    [[ "$(mount | grep ${path_chroot_____} | grep -v /media)" != ""        ]] &&
     {
-        echo “Unmounting failed, please unmount the filesystem(s) manually!”
+        echo "Unmounting failed, please unmount the filesystem(s) manually!"
         exit 0
     }
     # unmount media (from chroot)
-    for i in “${media[@]}”                                                ; do
-    su “${user____________}” -c “udisksctl unmount -b $i”     &> /dev/null; done
-    umount -lf “${path_chroot_____}”/media                    &> /dev/null
+    for i in "${media[@]}"                                                ; do
+    su "${user____________}" -c "udisksctl unmount -b $i"     &> /dev/null; done
+    umount -lf "${path_chroot_____}"/media                    &> /dev/null
     sleep 2
-    for i in “${media[@]}”                                                ; do
-    su “${user____________}” -c “udisksctl mount   -b $i”     &> /dev/null; done
+    for i in "${media[@]}"                                                ; do
+    su "${user____________}" -c "udisksctl mount   -b $i"     &> /dev/null; done
     # run the QEMU VM and sync chroot with its filesystem
-    [[ ! -e “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”   ]] &&
+    [[ ! -e "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"   ]] &&
     {
-        echo “The QEMU VM qcow2 file was not found! Aborting chroot upgrade...”
+        echo "The QEMU VM qcow2 file was not found! Aborting chroot upgrade..."
         exit 0
     }
     [[ $1 -eq 1                                                            ]] &&
     qemu-system-x86_64                                                         \
           -smp    ${qemu_smp________}                                          \
           -m      ${qemu_m__________}                                          \
-          -hda   “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”  \
-          -nic    user,smb=“${path_software___}”                               \
+          -hda   "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"  \
+          -nic    user,smb="${path_software___}"                               \
           -nic    user,hostfwd=tcp::${qemu_ssh_port___}-:22
-    echo “Chroot upgrade initiated. Commencing filesystem sync...”
-    umount -lf   “${path_mountpoint_}”                        &> /dev/null
+    echo "Chroot upgrade initiated. Commencing filesystem sync..."
+    umount -lf   "${path_mountpoint_}"                        &> /dev/null
     guestmount                                                                 \
-          -a     “${path_filesystem_}$(basename “${path_chroot_____}”).qcow2”  \
+          -a     "${path_filesystem_}$(basename "${path_chroot_____}").qcow2"  \
           -i                                                                   \
-          —ro   “${path_mountpoint_}”
+                 "${path_mountpoint_}"
     {
-        tmp_path=“$(eval echo ~”${user____________}”)”/.rsync_ignore
+        tmp_path="$(eval echo ~"${user____________}")"/.rsync_ignore
         for i in $(echo ${rsync_ignore____})                              ; do
-        mkdir -p “$(dirname “${tmp_path}$i”)”
-        rm   -rf “${tmp_path}$i”
-        mv       “${path_chroot_____}$i” “${tmp_path}$i”                  ; done
+        mkdir -p "$(dirname "${tmp_path}$i")"
+        rm   -rf "${tmp_path}$i"
+        mv       "${path_chroot_____}$i" "${tmp_path}$i"                  ; done
     }
     rsync -arzv —delete                                                       \
-          —include=“*”                                                        \
-          “${path_mountpoint_}”/ “${path_chroot_____}”/
+          —include="*"                                                        \
+          "${path_mountpoint_}"/ "${path_chroot_____}"/
     {
         for i in $(echo ${rsync_ignore____})                              ; do
-        mkdir -p “$(dirname “${path_chroot_____}$i”)”
-        rm   -rf “${path_chroot_____}$i”
-        mv       “${tmp_path}$i” “$(dirname “${path_chroot_____}$i”)”     ; done
+        mkdir -p "$(dirname "${path_chroot_____}$i")"
+        rm   -rf "${path_chroot_____}$i"
+        mv       "${tmp_path}$i" "$(dirname "${path_chroot_____}$i")"     ; done
     }
-    rm     -rf   “${tmp_path}”
-    umount -lf   “${path_mountpoint_}”                        &> /dev/null
+    rm     -rf   "${tmp_path}"
+    umount -lf   "${path_mountpoint_}"                        &> /dev/null
     # finish
     [[ $2 -eq 1                                                            ]] &&
-    echo “Chroot install/upgrade is complete! Rebooting (120 seconds)...”     &&
+    echo "Chroot install/upgrade is complete! Rebooting (120 seconds)..."     &&
     sleep 120                                                                 &&
     shutdown -r now
 }
@@ -304,19 +304,19 @@ chroot_upgrade() {
 # perform /chroot_*/ operations or run a command —————————— #
 ####
 # chroot operations ####################
-[[ $@ == *”—backup”*                                                      ]] &&
+[[ $@ == *"—backup"*                                                      ]] &&
 { chroot_backup                                                      ; exit 0; }
-[[ $@ == *”—install”*                                                     ]] &&
+[[ $@ == *"—install"*                                                     ]] &&
 { chroot_install                                                     ; exit 0; }
-[[ $@ == *”—restore”*                                                     ]] &&
+[[ $@ == *"—restore"*                                                     ]] &&
 { chroot_restore                                                     ; exit 0; }
-[[ $@ == *”—setup”*                                                       ]] &&
+[[ $@ == *"—setup"*                                                       ]] &&
 { chroot_setup   1                   0                               ; exit 0; }
-[[ $@ == *”—upgrade”*                                                     ]] &&
+[[ $@ == *"—upgrade"*                                                     ]] &&
 { chroot_upgrade ${vm_on_upgrade___} 1                               ; exit 0; }
 # chroot command #######################
-chroot “${path_chroot_____}”                                                   \
-su     “${user_chroot_____}” -c “export DISPLAY=:${display_________}; $@“
+chroot "${path_chroot_____}"                                                   \
+su     "${user_chroot_____}" -c "export DISPLAY=:${display_________}; $@"
 
 # ============================================================================ #
 # ==== Finish ================================================================ #
