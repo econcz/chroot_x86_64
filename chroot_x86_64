@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # ============================================================================ #
-# ==== Version 1.1.0  31mar2022  ============================================= #
+# ==== Version 1.1.4  31mar2024  ============================================= #
 # ==== (c) IB                    ============================================= #
 # ============================================================================ #
 
@@ -19,6 +19,7 @@
   echo "type $(readlink -f "$0") --backup  to backup unsynced folders/files" ;
   echo "type $(readlink -f "$0") --restore to restore the chroot environment";
   echo "type $(readlink -f "$0") <cmd>     to run <cmd> under chroot"; exit 0; }
+# an extra line to even the total number
 
 # ============================================================================ #
 # ==== Configuration ========================================================= #
@@ -26,14 +27,14 @@
 
 # /general configuration/ (general variables) -------------------------------- #
 ####
-user____________="ilyabolotov"                         `# "..." in Raspberry Pi`
-user_chroot_____="ilyabolotov"                         `# same as in the VM    `
+user____________="$(whoami)"                           `# "..." in Raspberry Pi`
+user_chroot_____="$(whoami)"                           `# same as in the VM    `
 display_________=0                                     `# 0 by default         `
 path_filesystem_="$(ls -d /media/${user____________}/*USB*/*RPi/_filesystem/)"
 path_software___="$(ls -d /media/${user____________}/*USB*/*RPi/_software/  )"
 path_backup_file="${path_filesystem_}/non_qcow2.tar.gz"
 qemu_image_url__="https://cdimage.debian.org/debian-cd/current/amd64"
-qemu_image_url__="${qemu_image_url__}/iso-cd/debian-10.10.0-amd64-netinst.iso"
+qemu_image_url__="${qemu_image_url__}/iso-cd/debian-12.6.0-amd64-netinst.iso"
 qemu_image_size_="64G"                                 `# 16G or more          `
 qemu_smp________=2                                     `# 50% of host CPU      `
 qemu_m__________="4G"                                  `# 50% of host RAM      `
@@ -164,8 +165,9 @@ chroot_setup()   {
     chroot "${path_chroot_____}" mkdir -p /media                              &&
     mount  --rbind /media    "${path_chroot_____}"/media
     # share DNS servers and X11
-    mkdir -p               /run/resolvconf/
-    ln -f /etc/resolv.conf /run/resolvconf/
+    cp -R /etc/host*       "${path_chroot_____}"/etc/
+    ln -f /run/resolvconf/resolv.conf                                          \
+          "${path_chroot_____}"/etc/
     ln -f /tmp/.X11-unix/X${display_________}                                  \
           "${path_chroot_____}"/tmp/.X11-unix/
     cp    "$(eval echo ~"${user____________}")"/.Xauthority                    \
@@ -247,7 +249,7 @@ chroot_upgrade() {
     while read i; do media=( "${media[@]}" "$i"); done                         \
     < <(mount | grep -v ${path_chroot_____} | grep /media | awk '{print $1}')
     # unmount the chroot filesystem(s)
-    for i in "/proc" "/sys" "/dev/pts" "/dev"                             ; do
+    for i in "/proc" "/sys" "/run" "/dev/pts" "/dev"                      ; do
     umount -lf "${path_chroot_____}$i"                        &> /dev/null; done
     sleep 2
     # unmount user folder(s)
@@ -340,4 +342,4 @@ su     "${user_chroot_____}" -c "export DISPLAY=:${display_________}; $@"
 exit 0
 
 ####
-####                                                                           #
+####
